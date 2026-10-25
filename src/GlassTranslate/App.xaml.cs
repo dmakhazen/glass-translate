@@ -45,11 +45,13 @@ public partial class App : Application
             _ = SnapshotAsync(w, shot, e.Args.Length > 2 ? e.Args[2] : "");
             return;
         }
-        // README picture: GlassTranslate.exe --readme-shot page.png out.png engine targetLang
-        if (e.Args is ["--readme-shot", var page, var picture, var shotEngine, var shotTarget])
+        // README picture: GlassTranslate.exe --readme-shot page.png out.png engine targetLang x y width height
+        // (the rectangle is the part of the page the frame covers)
+        if (e.Args is ["--readme-shot", var page, var picture, var shotEngine, var shotTarget, var ax, var ay, var aw, var ah])
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            _ = ReadmeShotAsync(page, picture, shotEngine, shotTarget);
+            _ = ReadmeShotAsync(page, picture, shotEngine, shotTarget,
+                new Int32Rect(int.Parse(ax), int.Parse(ay), int.Parse(aw), int.Parse(ah)));
             return;
         }
         StartupUri = new Uri("MainWindow.xaml", UriKind.Relative);

@@ -10,30 +10,31 @@ namespace GlassTranslate;
 
 public partial class App
 {
-    /// <summary>Builds the README picture: the real window placed over a page, with the page really
-    /// recognized and translated. Composed offscreen, since the overlay is hidden from screen capture.</summary>
-    private async Task ReadmeShotAsync(string pagePath, string output, string engineId, string target)
+    /// <summary>Builds the README picture: the real window placed over part of a page, with that part really
+    /// recognized and translated while the rest of the page stays as it is. Composed offscreen, since the
+    /// overlay is hidden from screen capture.</summary>
+    private async Task ReadmeShotAsync(string pagePath, string output, string engineId, string target, Int32Rect area)
     {
         var log = new List<string>();
         try
         {
             var page = new FormatConvertedBitmap(BitmapFrame.Create(new Uri(Path.GetFullPath(pagePath))), PixelFormats.Bgra32, null, 0);
-            var data = new byte[page.PixelWidth * page.PixelHeight * 4];
-            page.CopyPixels(data, page.PixelWidth * 4, 0);
-            var frame = new Frame(page.PixelWidth, page.PixelHeight, data);
+            var crop = new CroppedBitmap(page, area);
+            var data = new byte[area.Width * area.Height * 4];
+            crop.CopyPixels(data, area.Width * 4, 0);
+            var frame = new Frame(area.Width, area.Height, data);
 
-            // Size the window so its transparent area exactly fits the page.
+            // Size the window so its transparent area exactly fits the chosen part of the page.
             var w = new MainWindow { ShowActivated = false, Left = -6000, Top = 0, Width = 960, Height = 600 };
             w.Show();
             w.Left = -6000;
             await Task.Delay(500);
-            w.Width += page.PixelWidth - w.Hole.ActualWidth;
-            w.Height += page.PixelHeight - w.Hole.ActualHeight;
+            w.Width += area.Width - w.Hole.ActualWidth;
+            w.Height += area.Height - w.Hole.ActualHeight;
             await Task.Delay(500);
 
             using var ocr = new OcrEngine();
             var regions = TextLayout.Group(frame, ocr.Recognize(frame, ModelStore.AutoGroups()));
-            var sw = System.Diagnostics.Stopwatch.StartNew();
             var translated = await TranslatorRegistry.Get(engineId).TranslateAsync(regions.Select(r => r.Text).ToList(), null, target, default);
             var keep = Enumerable.Range(0, regions.Count)
                 .Where(i => !System.Text.RegularExpressions.Regex.IsMatch(regions[i].Text, @"^[A-Z0-9\W]{1,5}$")
@@ -42,13 +43,14 @@ public partial class App
             foreach (var i in keep) log.Add($"{regions[i].Text} => {translated[i].Text}");
 
             w.UpdateDetected("th");
-            w.SetStatus(Strings.Format("Done", regions.Count, 840) + " · " + TranslatorRegistry.Get(engineId).DisplayName, GlassTranslate.MainWindow.StatusKind.Ok);
+            w.SetStatus(Strings.Format("Done", regions.Count, 840) + " · " + TranslatorRegistry.Get(engineId).DisplayName,
+                GlassTranslate.MainWindow.StatusKind.Ok);
             await Task.Delay(300);
 
             var root = (FrameworkElement)w.Content;
             var hole = w.Hole.TranslatePoint(new Point(0, 0), root);
             double ww = root.ActualWidth, wh = root.ActualHeight;
-            const double margin = 28;
+            var windowAt = new Point(area.X - hole.X, area.Y - hole.Y);
 
             var translations = new Canvas { Width = frame.Width, Height = frame.Height };
             OverlayWindow.Paint(translations, 1.0, frame, keep.Select(i => regions[i]).ToList(),
@@ -56,24 +58,30 @@ public partial class App
             translations.Measure(new Size(frame.Width, frame.Height));
             translations.Arrange(new Rect(0, 0, frame.Width, frame.Height));
 
-            const double scale = 2; // crisp on high-DPI screens; GitHub scales it down
-            var windowShot = new RenderTargetBitmap((int)(ww * scale), (int)(wh * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
-            windowShot.Render(root);
-            var textShot = new RenderTargetBitmap((int)(frame.Width * scale), (int)(frame.Height * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
-            textShot.Render(translations);
+            const double scale = 1.5; // crisp enough on high-DPI screens; GitHub scales it down
+            RenderTargetBitmap Shot(Visual v, double width, double height)
+            {
+                var b = new RenderTargetBitmap((int)(width * scale), (int)(height * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+                b.Render(v);
+                return b;
+            }
+            var windowShot = Shot(root, ww, wh);
+            var textShot = Shot(translations, frame.Width, frame.Height);
 
             var dv = new DrawingVisual();
             using (var dc = dv.RenderOpen())
             {
-                var pageColor = new SolidColorBrush(Color.FromRgb(0xF3, 0xF4, 0xF6));
-                dc.DrawRectangle(pageColor, null, new Rect(0, 0, ww + 2 * margin, wh + 2 * margin));
-                var origin = new Point(margin + hole.X, margin + hole.Y);
-                dc.DrawImage(page, new Rect(origin, new Size(frame.Width, frame.Height)));
-                dc.DrawImage(textShot, new Rect(origin, new Size(frame.Width, frame.Height)));
-                dc.DrawImage(windowShot, new Rect(margin, margin, ww, wh));
+                dc.DrawImage(page, new Rect(0, 0, page.PixelWidth, page.PixelHeight));
+                // Soft shadow so the floating window reads as a separate layer above the page.
+                for (int k = 1; k <= 12; k++)
+                    dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(7, 0, 0, 0)), null,
+                        new Rect(windowAt.X - k + 4, windowAt.Y - k + 8, ww + 2 * k, wh + 2 * k), 14 + k, 14 + k);
+                // The shadow must not darken what shows through the window's transparent middle.
+                dc.DrawImage(crop, new Rect(area.X, area.Y, area.Width, area.Height));
+                dc.DrawImage(textShot, new Rect(area.X, area.Y, area.Width, area.Height));
+                dc.DrawImage(windowShot, new Rect(windowAt, new Size(ww, wh)));
             }
-            var final = new RenderTargetBitmap((int)((ww + 2 * margin) * scale), (int)((wh + 2 * margin) * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
-            final.Render(dv);
+            var final = Shot(dv, page.PixelWidth, page.PixelHeight);
             var enc = new PngBitmapEncoder();
             enc.Frames.Add(BitmapFrame.Create(final));
             using (var fs = File.Create(output)) enc.Save(fs);

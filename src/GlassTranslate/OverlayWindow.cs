@@ -52,7 +52,8 @@ public sealed class OverlayWindow : Window
         IReadOnlyList<string> translations, FontFamily font, double fixedSize)
     {
         canvas.Children.Clear();
-        for (int i = 0; i < blocks.Count; i++)
+        // Bottom to top, so each block's text is drawn over the extra background of the block below it.
+        foreach (int i in Enumerable.Range(0, blocks.Count).OrderByDescending(i => blocks[i].Box.Y))
         {
             var b = blocks[i];
             var (bg, fg) = PickColors(frame, b.Box);
