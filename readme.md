@@ -1,5 +1,8 @@
 # Glass Translate
 
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4)
+![Portable, no install](https://img.shields.io/badge/portable-no%20install-2EA44F)
+
 A transparent frame for Windows that translates any text under it, including text inside images, and draws the translation right over the original.
 
 ![Glass Translate over a Thai shop page, translated into English](docs/screenshot.png)
