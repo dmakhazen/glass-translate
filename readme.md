@@ -77,6 +77,9 @@ Pushing a tag like `v0.1.0` builds the zip on GitHub Actions and publishes it as
 
 Diagnostics: `GLASS_LOG=1` writes `glass.log` next to the exe.
 
+## License / Лицензия
+[MIT](LICENSE)
+
 ## Credits
 OCR: [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) PP-OCRv5 models (Apache-2.0), ONNX conversions from [monkt/paddleocr-onnx](https://huggingface.co/monkt/paddleocr-onnx), run with [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT).
 
