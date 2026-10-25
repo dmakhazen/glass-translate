@@ -224,9 +224,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private enum StatusKind { Idle, Busy, Ok, Error }
+    internal enum StatusKind { Idle, Busy, Ok, Error }
 
-    private void SetStatus(string text, StatusKind kind)
+    internal void SetStatus(string text, StatusKind kind)
     {
         StatusText.Text = text;
         StatusText.ToolTip = text;
@@ -303,7 +303,7 @@ public partial class MainWindow : Window
         return _detected != null && Languages.Find(_detected) is { } d ? $"{auto} ({d.NativeName})" : auto;
     }
 
-    private void UpdateDetected(string? code)
+    internal void UpdateDetected(string? code)
     {
         if (code == null || code == _detected) return;
         _detected = code;

@@ -1,0 +1,11 @@
+name: Idea / Идея
+description: Suggest an improvement / Предложить улучшение
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help / Что поможет
+      description: Describe the situation and what you'd like the program to do. / Опишите ситуацию и что программа должна делать.
+    validations:
+      required: true

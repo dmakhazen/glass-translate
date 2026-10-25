@@ -66,17 +66,21 @@ public sealed class OverlayWindow : Window
                 VerticalAlignment = VerticalAlignment.Center,
             };
             text.FontSize = fixedSize > 0 ? fixedSize : FitFontSize(text, w, h, b.LineHeight / scale);
+            // Thai (and Vietnamese) marks above and below the letters stick out of the detected box,
+            // so the background reaches a little further than the text to cover them.
+            // Stacked marks above Thai letters reach the highest, hence the larger top margin.
+            double top = Math.Round(b.LineHeight / scale * 0.35), bottom = Math.Round(b.LineHeight / scale * 0.2);
             var box = new Border
             {
                 Background = new SolidColorBrush(bg),
                 Width = w,
-                MinHeight = h,
+                MinHeight = h + top + bottom,
                 CornerRadius = new CornerRadius(2),
-                Padding = new Thickness(1, 0, 1, 0),
+                Padding = new Thickness(1, top, 1, bottom),
                 Child = text,
             };
             Canvas.SetLeft(box, b.Box.X / scale);
-            Canvas.SetTop(box, b.Box.Y / scale);
+            Canvas.SetTop(box, b.Box.Y / scale - top);
             canvas.Children.Add(box);
         }
     }
@@ -98,7 +102,8 @@ public sealed class OverlayWindow : Window
     private static (Color bg, Color fg) PickColors(Frame f, PixelRect r)
     {
         var (bg, fg) = TextColors.Pick(f, r);
-        if (TextColors.Contrast(fg, bg) < 100)
+        // Keep the page's own text colour unless it would be hard to read.
+        if (TextColors.Contrast(fg, bg) < 60)
             fg = TextColors.Luma(bg) > 140 ? Colors.Black : Colors.White;
         return (bg, fg);
     }

@@ -45,6 +45,13 @@ public partial class App : Application
             _ = SnapshotAsync(w, shot, e.Args.Length > 2 ? e.Args[2] : "");
             return;
         }
+        // README picture: GlassTranslate.exe --readme-shot page.png out.png engine targetLang
+        if (e.Args is ["--readme-shot", var page, var picture, var shotEngine, var shotTarget])
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            _ = ReadmeShotAsync(page, picture, shotEngine, shotTarget);
+            return;
+        }
         StartupUri = new Uri("MainWindow.xaml", UriKind.Relative);
         base.OnStartup(e);
     }

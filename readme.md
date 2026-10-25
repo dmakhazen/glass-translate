@@ -1,8 +1,16 @@
 # Glass Translate
 
-**[English](#english) · [Русский](#русский)**
+[![Release](https://img.shields.io/github/v/release/dmakhazen/glass-translate?label=download)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/dmakhazen/glass-translate/total)](../../releases)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/dmakhazen)
+[![Boosty](https://img.shields.io/badge/Boosty-support-F15F2C)](https://boosty.to/dmakhazen/donate)
 
 A transparent frame for Windows that translates any text under it, including text inside images, and draws the translation right over the original.
+
+![Glass Translate over a Thai shop page, translated into English](docs/screenshot.png)
+
+**[English](#english) · [Русский](#русский)**
 
 ---
 
@@ -59,17 +67,10 @@ If it helps you: [Ko-fi](https://ko-fi.com/dmakhazen) · [Boosty](https://boosty
 Requires the .NET 10 SDK. / Нужен .NET 10 SDK.
 
 ```powershell
-# OCR models (once) / модели OCR (один раз)
-$b = 'https://huggingface.co/monkt/paddleocr-onnx/resolve/main'
-New-Item -ItemType Directory -Force models_cache\det | Out-Null
-Invoke-WebRequest "$b/detection/v5/det.onnx" -OutFile models_cache\det\det.onnx
-foreach ($l in 'thai','english','eslav','latin') {
-  New-Item -ItemType Directory -Force models_cache\$l | Out-Null
-  foreach ($f in 'rec.onnx','dict.txt') { Invoke-WebRequest "$b/languages/$l/$f" -OutFile models_cache\$l\$f }
-}
-
-.\build-portable.ps1   # → dist\GlassTranslate-<version>-portable-win-x64.zip
+.\build-portable.ps1   # downloads OCR models once, then -> dist\GlassTranslate-<version>-portable-win-x64.zip
 ```
+
+Pushing a tag like `v0.1.0` builds the zip on GitHub Actions and publishes it as a release. / Пуш тега вида `v0.1.0` собирает zip в GitHub Actions и публикует релиз.
 
 Diagnostics: `GLASS_LOG=1` writes `glass.log` next to the exe.
 
